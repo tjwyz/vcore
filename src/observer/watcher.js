@@ -22,22 +22,6 @@ let uid = 0
  * This is used for both the $watch() api and directives.
  */
 export default class Watcher {
-    // vm: Component;
-    // expression: string;
-    // cb: Function;
-    // id: number;
-    // deep: boolean;
-    // user: boolean;
-    // lazy: boolean;
-    // sync: boolean;
-    // dirty: boolean;
-    // active: boolean;
-    // deps: Array<Dep>;
-    // newDeps: Array<Dep>;
-    // depIds: ISet;
-    // newDepIds: ISet;
-    // getter: Function;
-    // value: any;
     constructor (vm, expOrFn, cb, options) {
         this.vm = vm
         vm._watchers.push(this)
@@ -58,9 +42,7 @@ export default class Watcher {
         this.newDeps = []
         this.depIds = new Set()
         this.newDepIds = new Set()
-        this.expression = process.env.NODE_ENV !== 'production'
-        ? expOrFn.toString()
-        : ''
+        this.expression = expOrFn.toString()
         // parse expression for getter
         if (typeof expOrFn === 'function') {
             this.getter = expOrFn
@@ -69,13 +51,14 @@ export default class Watcher {
             if (!this.getter) {
                 this.getter = function () {}
                 process.env.NODE_ENV !== 'production' && warn(
-                  `Failed watching path: "${expOrFn}" ` +
-                  'Watcher only accepts simple dot-delimited paths. ' +
-                  'For full control, use a function instead.',
-                  vm
+                    `Failed watching path: "${expOrFn}" ` +
+                    'Watcher only accepts simple dot-delimited paths. ' +
+                    'For full control, use a function instead.',
+                    vm
                 )
             }
         }
+        //初始化
         this.value = this.lazy
         ? undefined
         : this.get()
@@ -91,16 +74,12 @@ export default class Watcher {
         try {
             value = this.getter.call(vm, vm)
         } catch (e) {
-            if (this.user) {
-                handleError(e, vm, `getter for watcher "${this.expression}"`)
-            } else {
-                throw e
-            }
+            console.log(e)
         } finally {
             // "touch" every property so they are all tracked as
             // dependencies for deep watching
             if (this.deep) {
-            traverse(value)
+                traverse(value)
             }
             popTarget()
             this.cleanupDeps()

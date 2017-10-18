@@ -100,34 +100,10 @@ export function renderMixin (Vue) {
         // set parent vnode. this allows render functions to have access
         // to the data on the placeholder node.
         vm.$vnode = _parentVnode
+        
         // render self
-        let vnode
-        try {
-            vnode = render.call(vm._renderProxy, vm.$createElement)
-        } catch (e) {
-            handleError(e, vm, `render function`)
-            // return error render result,
-            // or previous vnode to prevent render error causing blank component
-            /* istanbul ignore else */
-            if (process.env.NODE_ENV !== 'production') {
-                vnode = vm.$options.renderError
-                ? vm.$options.renderError.call(vm._renderProxy, vm.$createElement, e)
-                : vm._vnode
-            } else {
-                vnode = vm._vnode
-            }
-        }
-        // return empty vnode in case the render function errored out
-        if (!(vnode instanceof VNode)) {
-            if (process.env.NODE_ENV !== 'production' && Array.isArray(vnode)) {
-                warn(
-                  'Multiple root nodes returned from render function. Render function ' +
-                  'should return a single root node.',
-                  vm
-                )
-            }
-            vnode = createEmptyVNode()
-        }
+        let vnode = render.call(vm._renderProxy, vm.$createElement)
+
         // set parent
         vnode.parent = _parentVnode
         return vnode

@@ -1,7 +1,6 @@
 /* @flow */
 
 import Dep from './dep'
-import { arrayMethods } from './array'
 import {
     def,
     warn,
@@ -13,17 +12,7 @@ import {
     isServerRendering
 } from '../util/index'
 
-const arrayKeys = Object.getOwnPropertyNames(arrayMethods)
 
-/**
- * By default, when a reactive property is set, the new value is
- * also converted to become reactive. However when passing down props,
- * we don't want to force conversion because the value may be a nested value
- * under a frozen data structure. Converting it would defeat the optimization.
- */
-export const observerState = {
-    shouldConvert: true
-}
 
 /**
  * Observer class that are attached to each observed
@@ -39,14 +28,10 @@ export class Observer {
         
         // number of vms that has this object as root $data
         this.vmCount = 0
-
+        //def 没第四个参数    value中__ob__是不可枚举的，Object.keys不出
         def(value, '__ob__', this)
 
         if (Array.isArray(value)) {
-            const augment = hasProto
-            ? protoAugment
-            : copyAugment
-            augment(value, arrayMethods, arrayKeys)
             this.observeArray(value)
         } else {
             this.walk(value)
@@ -75,34 +60,11 @@ export class Observer {
     }
 }
 
-// helpers
-
-/**
- * Augment an target Object or Array by intercepting
- * the prototype chain using __proto__
- */
-function protoAugment (target, src, keys) {
-    /* eslint-disable no-proto */
-    target.__proto__ = src
-    /* eslint-enable no-proto */
-}
-
-/**
- * Augment an target Object or Array by defining
- * hidden properties.
- */
-/* istanbul ignore next */
-function copyAugment (target, src, keys) {
-    for (let i = 0, l = keys.length; i < l; i++) {
-        const key = keys[i]
-        def(target, key, src[key])
-    }
-}
-
 /**
  * Attempt to create an observer instance for a value,
  * returns the new observer if successfully observed,
  * or the existing observer if the value already has one.
+ * value : vm._data {a:1}
  */
 export function observe (value, asRootData) {
     // value是实例对象
@@ -112,12 +74,7 @@ export function observe (value, asRootData) {
     let ob
     if (hasOwn(value, '__ob__') && value.__ob__ instanceof Observer) {
         ob = value.__ob__
-    } else if (
-        observerState.shouldConvert &&
-        !isServerRendering() &&
-        (Array.isArray(value) || isPlainObject(value)) &&
-        Object.isExtensible(value) &&
-        !value._isVue
+    } else if ( (Array.isArray(value) || isPlainObject(value)) && Object.isExtensible(value) && !value._isVue
     ) {
         ob = new Observer(value)
     }
@@ -129,27 +86,39 @@ export function observe (value, asRootData) {
     return ob
 }
 
+
+
 /**
  * Define a reactive property on an Object.
+ * obj:vm._props
  */
-export function defineReactive (obj, key, val, customSetter, shallow) {
+export function defineReactive (obj, key, val, customSetter) {
+
+    // 四个地方调用了dep.notify
+    // 1.对数组push等七个方法重写的函数中
+    // 2.set方法，为一个对象添加一个属性
+    // 3.del方法，为对象删除一个属性
+    // 4.在此
     const dep = new Dep()
 
     const property = Object.getOwnPropertyDescriptor(obj, key)
+    //能否使用delete、能否需改属性特性、或能否修改访问器属性、，false为不可重新定义，默认值为true
     if (property && property.configurable === false) {
         return
     }
 
     // cater for pre-defined getter/setters
-    const getter = property && property.get
-    const setter = property && property.set
-
-    let childOb = !shallow && observe(val)
+    // const getter = property && property.get
+    // const setter = property && property.set
+    // 递归！
+    let childOb = observe(val)
+    
     Object.defineProperty(obj, key, {
         enumerable: true,
         configurable: true,
         get: function reactiveGetter () {
-            const value = getter ? getter.call(obj) : val
+            // const value = getter ? getter.call(obj) : val
+            const value = val
             if (Dep.target) {
                 dep.depend()
                 if (childOb) {
@@ -162,21 +131,19 @@ export function defineReactive (obj, key, val, customSetter, shallow) {
             return value
         },
         set: function reactiveSetter (newVal) {
-            const value = getter ? getter.call(obj) : val
-            /* eslint-disable no-self-compare */
-            if (newVal === value || (newVal !== newVal && value !== value)) {
+            // const value = getter ? getter.call(obj) : val
+            // const value = val
+            
+            // if (newVal === value || (newVal !== newVal && value !== value)) {
+            //     return
+            // }
+            if (val === value) {
                 return
             }
-            /* eslint-enable no-self-compare */
-            if (process.env.NODE_ENV !== 'production' && customSetter) {
-                customSetter()
-            }
-            if (setter) {
-                setter.call(obj, newVal)
-            } else {
-                val = newVal
-            }
-            childOb = !shallow && observe(newVal)
+
+            val = newVal
+
+            childOb = observe(newVal)
             dep.notify()
         }
     })

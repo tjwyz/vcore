@@ -197,9 +197,9 @@ export function lifecycleMixin (Vue: Class<Component>) {
 
 
 
-export function updateChildComponent (vm: Component,propsData: ?Object,listeners: ?Object,parentVnode: VNode,renderChildren: ?Array<VNode>) {
+export function updateChildComponent (vm, propsData, listeners, parentVnode, renderChildren) {
     if (process.env.NODE_ENV !== 'production') {
-    isUpdatingChildComponent = true
+        isUpdatingChildComponent = true
     }
 
     // determine whether component has slot children
@@ -231,8 +231,8 @@ export function updateChildComponent (vm: Component,propsData: ?Object,listeners
         const props = vm._props
         const propKeys = vm.$options._propKeys || []
         for (let i = 0; i < propKeys.length; i++) {
-          const key = propKeys[i]
-          props[key] = validateProp(key, vm.$options.props, propsData, vm)
+            const key = propKeys[i]
+            props[key] = validateProp(key, vm.$options.props, propsData, vm)
         }
         observerState.shouldConvert = true
         // keep a copy of raw propsData

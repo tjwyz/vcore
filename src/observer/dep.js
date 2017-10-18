@@ -24,6 +24,8 @@ export default class Dep {
 
     depend () {
         if (Dep.target) {
+            // Dep.target: 当前watcher实例
+            // this : Dep实例
             Dep.target.addDep(this)
         }
     }
@@ -40,6 +42,8 @@ export default class Dep {
 // the current target watcher being evaluated.
 // this is globally unique because there could be only one
 // watcher being evaluated at any time.
+// 
+// Dep.target(watcher)
 Dep.target = null
 
 const targetStack = []

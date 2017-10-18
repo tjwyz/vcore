@@ -24,8 +24,10 @@ export function extractPropsFromVNodeData (data,Ctor,tag) {
     }
 
     const res = {}
+    //父组件给的
     const { attrs, props } = data
     if (isDef(attrs) || isDef(props)) {
+        //子组件想要的
         for (const key in propOptions) {
             const altKey = hyphenate(key)
             // if (process.env.NODE_ENV !== 'production') {

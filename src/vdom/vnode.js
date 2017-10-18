@@ -50,7 +50,7 @@ export default class VNode {
 
     // DEPRECATED: alias for componentInstance for backwards compat.
     /* istanbul ignore next */
-    get child (): Component | void {
+    get child () {
         return this.componentInstance
     }
 }

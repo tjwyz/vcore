@@ -86,9 +86,8 @@ export function initMixin (Vue) {
 }
 
 function initInternalComponent (vm, options) {
-    //注意这段...全部option都在_proto_里
+    //注意这段...子组件template以外的option都在_proto_里
     const opts = vm.$options = Object.create(vm.constructor.options)
-    // doing this because it's faster than dynamic enumeration.
 
     opts.parent = options.parent
     opts.propsData = options.propsData

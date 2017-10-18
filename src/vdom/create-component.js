@@ -27,6 +27,37 @@ import {
     deactivateChildComponent
 } from '../instance/lifecycle'
 
+
+export function createComponentInstanceForVnode (vnode, parent, parentElm,refElm) {
+    // componentOptions：{ Ctor, propsData, listeners, tag, children }
+    // 子组件本来的option都在Ctor里
+    const vnodeComponentOptions = vnode.componentOptions
+    
+    // InternalComponentOptions
+    const options = {
+        _isComponent: true,
+        parent,
+        propsData: vnodeComponentOptions.propsData,
+        _componentTag: vnodeComponentOptions.tag,
+        _parentVnode: vnode,
+        _parentListeners: vnodeComponentOptions.listeners,
+        _renderChildren: vnodeComponentOptions.children,
+        _parentElm: parentElm || null,
+        _refElm: refElm || null
+    }
+    // check inline-template render functions
+    // const inlineTemplate = vnode.data.inlineTemplate
+    // if (isDef(inlineTemplate)) {
+    //     options.render = inlineTemplate.render
+    //     options.staticRenderFns = inlineTemplate.staticRenderFns
+    // }
+    
+    //new Vue(optons)
+    return new vnodeComponentOptions.Ctor(options)
+}
+
+
+
 // hooks to be invoked on component VNodes during patch
 // vue组件的生命周期底层其实就依赖于vnode的生命周期
 const componentVNodeHooks = {
@@ -52,13 +83,14 @@ const componentVNodeHooks = {
     prepatch (oldVnode: MountedComponentVNode, vnode: MountedComponentVNode) {
         const options = vnode.componentOptions
         const child = vnode.componentInstance = oldVnode.componentInstance
-        //在lifeCycle中
+        
+        //updateChildComponent在lifeCycle中
         updateChildComponent(
-          child,
-          options.propsData, // updated props
-          options.listeners, // updated listeners
-          vnode, // new parent vnode
-          options.children // new children
+            child,
+            options.propsData, // updated props
+            options.listeners, // updated listeners
+            vnode, // new parent vnode
+            options.children // new children
         )
     },
 
@@ -66,8 +98,8 @@ const componentVNodeHooks = {
     insert (vnode: MountedComponentVNode) {
         const { context, componentInstance } = vnode
         if (!componentInstance._isMounted) {
-          componentInstance._isMounted = true
-          callHook(componentInstance, 'mounted')
+            componentInstance._isMounted = true
+            callHook(componentInstance, 'mounted')
         }
         if (vnode.data.keepAlive) {
             if (context._isMounted) {
@@ -97,37 +129,11 @@ const componentVNodeHooks = {
 
 const hooksToMerge = Object.keys(componentVNodeHooks)
 
-export function createComponentInstanceForVnode (vnode, parent, parentElm,refElm) {
-    // { Ctor, propsData, listeners, tag, children }
-    const vnodeComponentOptions = vnode.componentOptions
-    
-    // InternalComponentOptions
-    const options = {
-        _isComponent: true,
-        parent,
-        propsData: vnodeComponentOptions.propsData,
-        _componentTag: vnodeComponentOptions.tag,
-        _parentVnode: vnode,
-        _parentListeners: vnodeComponentOptions.listeners,
-        _renderChildren: vnodeComponentOptions.children,
-        _parentElm: parentElm || null,
-        _refElm: refElm || null
-    }
-    // check inline-template render functions
-    // const inlineTemplate = vnode.data.inlineTemplate
-    // if (isDef(inlineTemplate)) {
-    //     options.render = inlineTemplate.render
-    //     options.staticRenderFns = inlineTemplate.staticRenderFns
-    // }
-    
-    //new Vue(optons)
-    return new vnodeComponentOptions.Ctor(options)
-}
 
 
 
-// 渲染函数中的  data   还能有init/prepatch/insert/destroy  这四个key的值？
-function mergeHooks (data: VNodeData) {
+// data:vnode.data
+function mergeHooks (data) {
     if (!data.hook) {
         data.hook = {}
     }
@@ -148,20 +154,6 @@ function mergeHook (one, two) {
     }
 }
 
-
-// transform component v-model info (value and callback) into
-// prop and event handler respectively.
-function transformModel (options, data) {
-    const prop = (options.model && options.model.prop) || 'value';
-    const event = (options.model && options.model.event) || 'input';
-    (data.props || (data.props = {}))[prop] = data.model.value
-    const on = data.on || (data.on = {})
-    if (isDef(on[event])) {
-        on[event] = [data.model.callback].concat(on[event])
-    } else {
-        on[event] = data.model.callback
-    }
-}
 
 export function createComponent (Ctor, data, context, children, tag) {
     if (isUndef(Ctor)) {
@@ -231,6 +223,8 @@ export function createComponent (Ctor, data, context, children, tag) {
 
 
     // keep listeners
+    // 注意！  是data而不是context.$options.data(context.$options.xxx)
+    // data是渲染函数里的那个
     const listeners = data.on
 
     // if (isTrue(Ctor.options.abstract)) {
@@ -246,7 +240,11 @@ export function createComponent (Ctor, data, context, children, tag) {
     // }
 
     // merge component management hooks onto the placeholder node
-    // vnodeData拥有生命周期函数了
+    // 装饰vnode.data
+    // vnode.data.hook.init 
+    // vnode.data.hook.prepatch
+    // vnode.data.hook.insert
+    // vnode.data.hook.destroy
     mergeHooks(data)
 
 
@@ -263,4 +261,17 @@ export function createComponent (Ctor, data, context, children, tag) {
         { Ctor, propsData, listeners, tag, children }
         )
     return vnode
+}
+// transform component v-model info (value and callback) into
+// prop and event handler respectively.
+function transformModel (options, data) {
+    const prop = (options.model && options.model.prop) || 'value';
+    const event = (options.model && options.model.event) || 'input';
+    (data.props || (data.props = {}))[prop] = data.model.value
+    const on = data.on || (data.on = {})
+    if (isDef(on[event])) {
+        on[event] = [data.model.callback].concat(on[event])
+    } else {
+        on[event] = data.model.callback
+    }
 }

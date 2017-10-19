@@ -106,8 +106,8 @@ export function lifecycleMixin (Vue: Class<Component>) {
         }
     }
 
-    Vue.prototype._update = function (vnode: VNode, hydrating?: boolean) {
-        const vm: Component = this
+    Vue.prototype._update = function (vnode) {
+        const vm = this
         if (vm._isMounted) {
             callHook(vm, 'beforeUpdate')
         }
@@ -267,7 +267,7 @@ export function activateChildComponent (vm: Component, direct?: boolean) {
     if (direct) {
         vm._directInactive = false
         if (isInInactiveTree(vm)) {
-          return
+            return
         }
     } else if (vm._directInactive) {
         return

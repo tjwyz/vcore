@@ -91,6 +91,7 @@ export function observe (value, asRootData) {
 /**
  * Define a reactive property on an Object.
  * obj:vm._props
+ * 暂时取消了深度监听！！！！！
  */
 export function defineReactive (obj, key, val, customSetter) {
 
@@ -111,24 +112,28 @@ export function defineReactive (obj, key, val, customSetter) {
     // const getter = property && property.get
     // const setter = property && property.set
     // 递归！
-    let childOb = observe(val)
+    // 暂时不收集子元素
+    // let childOb = observe(val)
     
     Object.defineProperty(obj, key, {
         enumerable: true,
         configurable: true,
         get: function reactiveGetter () {
             // const value = getter ? getter.call(obj) : val
-            const value = val
+            // const value = val
+            
+            // 很重要. 首次收集时才有  
+            // 后续get都不在了  直接返回val
             if (Dep.target) {
                 dep.depend()
-                if (childOb) {
-                    childOb.dep.depend()
-                }
-                if (Array.isArray(value)) {
-                    dependArray(value)
-                }
+                // if (childOb) {
+                //     childOb.dep.depend()
+                // }
+                // if (Array.isArray(value)) {
+                //     dependArray(value)
+                // }
             }
-            return value
+            return val
         },
         set: function reactiveSetter (newVal) {
             // const value = getter ? getter.call(obj) : val
@@ -143,7 +148,7 @@ export function defineReactive (obj, key, val, customSetter) {
 
             val = newVal
 
-            childOb = observe(newVal)
+            // childOb = observe(newVal)
             dep.notify()
         }
     })
@@ -211,12 +216,12 @@ export function del (target, key) {
  * Collect dependencies on array elements when the array is touched, since
  * we cannot intercept array element access like property getters.
  */
-function dependArray (value) {
-    for (let e, i = 0, l = value.length; i < l; i++) {
-        e = value[i]
-        e && e.__ob__ && e.__ob__.dep.depend()
-        if (Array.isArray(e)) {
-            dependArray(e)
-        }
-    }
-}
+// function dependArray (value) {
+//     for (let e, i = 0, l = value.length; i < l; i++) {
+//         e = value[i]
+//         e && e.__ob__ && e.__ob__.dep.depend()
+//         if (Array.isArray(e)) {
+//             dependArray(e)
+//         }
+//     }
+// }

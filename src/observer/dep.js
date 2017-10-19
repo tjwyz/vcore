@@ -18,9 +18,9 @@ export default class Dep {
         this.subs.push(sub)
     }
 
-    removeSub (sub) {
-        remove(this.subs, sub)
-    }
+    // removeSub (sub) {
+    //     remove(this.subs, sub)
+    // }
 
     depend () {
         if (Dep.target) {
@@ -54,5 +54,6 @@ export function pushTarget (_target) {
 }
 
 export function popTarget () {
+    // [].pop() undefined
     Dep.target = targetStack.pop()
 }

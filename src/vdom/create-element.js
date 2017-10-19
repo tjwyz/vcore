@@ -21,7 +21,7 @@ import {
 const SIMPLE_NORMALIZE = 1
 const ALWAYS_NORMALIZE = 2
 
-// 万恶之源
+
 export function createElement (context, tag, data, children, normalizationType, alwaysNormalize) {
     //没第二个参数(data)
     if (Array.isArray(data) || isPrimitive(data)) {

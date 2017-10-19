@@ -115,6 +115,24 @@ function initData (vm) {
 
 const computedWatcherOptions = { lazy: true }
 
+
+/*
+computed: {
+    // 仅读取
+    aDouble: function () {
+        return this.a * 2
+    },
+    // 读取和设置
+    aPlus: {
+        get: function () {
+            return this.a + 1
+        },
+        set: function (v) {
+            this.a = v - 1
+        }
+    }
+}
+ */
 function initComputed (vm) {
     computed = vm.$options.computed
     const watchers = vm._computedWatchers = Object.create(null)
@@ -210,6 +228,7 @@ function createWatcher (vm,keyOrFn,handler,options) {
         options = handler
         handler = handler.handler
     }
+    //回调是个method
     if (typeof handler === 'string') {
         handler = vm[handler]
     }

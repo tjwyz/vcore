@@ -73,6 +73,7 @@ function createKeyToOldIdx (children, beginIdx, endIdx) {
 //入口
 export function createPatchFunction (backend) {
     let i, j
+    //old/new 两份vnode 在不同阶段(create/update) 触发的回调
     const cbs = {}
 
     const { modules, nodeOps } = backend
@@ -482,11 +483,11 @@ export function createPatchFunction (backend) {
         // delay insert hooks for component root nodes, invoke them after the
         // element is really inserted
         if (isTrue(initial) && isDef(vnode.parent)) {
-          vnode.parent.data.pendingInsert = queue
+            vnode.parent.data.pendingInsert = queue
         } else {
-          for (let i = 0; i < queue.length; ++i) {
-            queue[i].data.hook.insert(queue[i])
-          }
+            for (let i = 0; i < queue.length; ++i) {
+                queue[i].data.hook.insert(queue[i])
+            }
         }
     }
 
@@ -495,162 +496,157 @@ export function createPatchFunction (backend) {
     // are already rendered on the client or has no need for initialization
     const isRenderedModule = makeMap('attrs,style,class,staticClass,staticStyle,key')
 
+    
     // Note: this is a browser-only function so we can assume elms are DOM nodes.
     function hydrate (elm, vnode, insertedVnodeQueue) {
-        if (isTrue(vnode.isComment) && isDef(vnode.asyncFactory)) {
-          vnode.elm = elm
-          vnode.isAsyncPlaceholder = true
-          return true
-        }
-        if (process.env.NODE_ENV !== 'production') {
-          if (!assertNodeMatch(elm, vnode)) {
-            return false
-          }
-        }
+
+        //注意~~~
         vnode.elm = elm
+        //
+        
         const { tag, data, children } = vnode
+        
+        // createComponent
         if (isDef(data)) {
-          if (isDef(i = data.hook) && isDef(i = i.init)) i(vnode, true /* hydrating */)
-          if (isDef(i = vnode.componentInstance)) {
-            // child component. it should have hydrated its own tree.
-            initComponent(vnode, insertedVnodeQueue)
-            return true
-          }
+            // 组件vnode.data才有hook
+            // 调用组件vnode的init钩子 create Component Instance For Vnode
+            if (isDef(i = data.hook) && isDef(i = i.init)) i(vnode, true /* hydrating */)
+            
+            // 组件vnode
+            if (isDef(i = vnode.componentInstance)) {
+                // child component. it should have hydrated its own tree.
+                initComponent(vnode, insertedVnodeQueue)
+                return true
+            }
         }
+        
+        //还特么有tag不存在的情况.....?
         if (isDef(tag)) {
-          if (isDef(children)) {
-            // empty element, allow client to pick up and populate children
-            if (!elm.hasChildNodes()) {
-              createChildren(vnode, children, insertedVnodeQueue)
-            } else {
-              let childrenMatch = true
-              let childNode = elm.firstChild
-              for (let i = 0; i < children.length; i++) {
-                if (!childNode || !hydrate(childNode, children[i], insertedVnodeQueue)) {
-                  childrenMatch = false
-                  break
+            if (isDef(children)) {
+                // empty element, allow client to pick up and populate children
+                if (!elm.hasChildNodes()) {
+                    createChildren(vnode, children, insertedVnodeQueue)
+                } else {
+                    let childrenMatch = true
+                    let childNode = elm.firstChild
+                    for (let i = 0; i < children.length; i++) {
+                        if (!childNode || !hydrate(childNode, children[i], insertedVnodeQueue)) {
+                          childrenMatch = false
+                          break
+                        }
+                        childNode = childNode.nextSibling
+                    }
+                    // if childNode is not null, it means the actual childNodes list is
+                    // longer than the virtual children list.
+                    if (!childrenMatch || childNode) {
+                        if (process.env.NODE_ENV !== 'production' &&
+                            typeof console !== 'undefined' &&
+                            !bailed
+                        ) {
+                            bailed = true
+                            console.warn('Parent: ', elm)
+                            console.warn('Mismatching childNodes vs. VNodes: ', elm.childNodes, children)
+                        }
+                        return false
+                    }
                 }
-                childNode = childNode.nextSibling
-              }
-              // if childNode is not null, it means the actual childNodes list is
-              // longer than the virtual children list.
-              if (!childrenMatch || childNode) {
-                if (process.env.NODE_ENV !== 'production' &&
-                  typeof console !== 'undefined' &&
-                  !bailed
-                ) {
-                  bailed = true
-                  console.warn('Parent: ', elm)
-                  console.warn('Mismatching childNodes vs. VNodes: ', elm.childNodes, children)
+            }
+            if (isDef(data)) {
+                for (const key in data) {
+                    if (!isRenderedModule(key)) {
+                        invokeCreateHooks(vnode, insertedVnodeQueue)
+                        break
+                    }
                 }
-                return false
-              }
             }
-          }
-          if (isDef(data)) {
-            for (const key in data) {
-              if (!isRenderedModule(key)) {
-                invokeCreateHooks(vnode, insertedVnodeQueue)
-                break
-              }
-            }
-          }
         } else if (elm.data !== vnode.text) {
-          elm.data = vnode.text
+            elm.data = vnode.text
         }
         return true
     }
 
-    function assertNodeMatch (node, vnode) {
-        if (isDef(vnode.tag)) {
-          return (
-            vnode.tag.indexOf('vue-component') === 0 ||
-            vnode.tag.toLowerCase() === (node.tagName && node.tagName.toLowerCase())
-          )
-        } else {
-          return node.nodeType === (vnode.isComment ? 8 : 3)
-        }
-    }
-
     return function patch (oldVnode, vnode, hydrating, removeOnly, parentElm, refElm) {
         if (isUndef(vnode)) {
-          if (isDef(oldVnode)) invokeDestroyHook(oldVnode)
-          return
+            if (isDef(oldVnode)) invokeDestroyHook(oldVnode)
+            return
         }
 
         let isInitialPatch = false
         const insertedVnodeQueue = []
 
         if (isUndef(oldVnode)) {
-          // empty mount (likely as component), create new root element
-          isInitialPatch = true
-          createElm(vnode, insertedVnodeQueue, parentElm, refElm)
+            // empty mount (likely as component), create new root element
+            isInitialPatch = true
+            createElm(vnode, insertedVnodeQueue, parentElm, refElm)
         } else {
-          const isRealElement = isDef(oldVnode.nodeType)
-          if (!isRealElement && sameVnode(oldVnode, vnode)) {
-            // patch existing root node
-            patchVnode(oldVnode, vnode, insertedVnodeQueue, removeOnly)
-          } else {
-            if (isRealElement) {
-              // mounting to a real element
-              // check if this is server-rendered content and if we can perform
-              // a successful hydration.
-              if (oldVnode.nodeType === 1 && oldVnode.hasAttribute(SSR_ATTR)) {
-                oldVnode.removeAttribute(SSR_ATTR)
-                hydrating = true
-              }
-              if (isTrue(hydrating)) {
-                if (hydrate(oldVnode, vnode, insertedVnodeQueue)) {
-                  invokeInsertHook(vnode, insertedVnodeQueue, true)
-                  return oldVnode
-                } else if (process.env.NODE_ENV !== 'production') {
-                  warn(
-                    'The client-side rendered virtual DOM tree is not matching ' +
-                    'server-rendered content. This is likely caused by incorrect ' +
-                    'HTML markup, for example nesting block-level elements inside ' +
-                    '<p>, or missing <tbody>. Bailing hydration and performing ' +
-                    'full client-side render.'
-                  )
-                }
-              }
-              // either not server-rendered, or hydration failed.
-              // create an empty node and replace it
-              oldVnode = emptyNodeAt(oldVnode)
-            }
-            // replacing existing element
-            const oldElm = oldVnode.elm
-            const parentElm = nodeOps.parentNode(oldElm)
-            createElm(
-              vnode,
-              insertedVnodeQueue,
-              // extremely rare edge case: do not insert if old element is in a
-              // leaving transition. Only happens when combining transition +
-              // keep-alive + HOCs. (#4590)
-              oldElm._leaveCb ? null : parentElm,
-              nodeOps.nextSibling(oldElm)
-            )
+            const isRealElement = isDef(oldVnode.nodeType)
+            if (!isRealElement && sameVnode(oldVnode, vnode)) {
+                // patch existing root node
+                patchVnode(oldVnode, vnode, insertedVnodeQueue, removeOnly)
+            } else {
 
-            if (isDef(vnode.parent)) {
-              // component root element replaced.
-              // update parent placeholder node element, recursively
-              let ancestor = vnode.parent
-              while (ancestor) {
-                ancestor.elm = vnode.elm
-                ancestor = ancestor.parent
-              }
-              if (isPatchable(vnode)) {
-                for (let i = 0; i < cbs.create.length; ++i) {
-                  cbs.create[i](emptyNode, vnode.parent)
-                }
-              }
-            }
+                if (isRealElement) {
+                    // 原生dom元素 nodeType == 1(text2 comment3)
+                    if (oldVnode.nodeType === 1) {
+                        hydrating = true
+                    }
 
-            if (isDef(parentElm)) {
-              removeVnodes(parentElm, [oldVnode], 0, 0)
-            } else if (isDef(oldVnode.tag)) {
-              invokeDestroyHook(oldVnode)
+                    if (hydrating) {
+                        if (hydrate(oldVnode, vnode, insertedVnodeQueue)) {
+                            invokeInsertHook(vnode, insertedVnodeQueue, true)
+                            return oldVnode
+                        } else if (process.env.NODE_ENV !== 'production') {
+                            // warn(
+                            // 'The client-side rendered virtual DOM tree is not matching ' +
+                            // 'server-rendered content. This is likely caused by incorrect ' +
+                            // 'HTML markup, for example nesting block-level elements inside ' +
+                            // '<p>, or missing <tbody>. Bailing hydration and performing ' +
+                            // 'full client-side render.'
+                            // )
+                        }
+                    }
+                    // 正常在此之前已经return了..
+                    // either not server-rendered, or hydration failed.
+                    // create an empty node and replace it
+                    oldVnode = emptyNodeAt(oldVnode)
+                }
+                
+                //首次mounted到不了下面
+                
+                // replacing existing element
+                const oldElm = oldVnode.elm
+                const parentElm = nodeOps.parentNode(oldElm)
+                createElm(
+                    vnode,
+                    insertedVnodeQueue,
+                    // extremely rare edge case: do not insert if old element is in a
+                    // leaving transition. Only happens when combining transition +
+                    // keep-alive + HOCs. (#4590)
+                    oldElm._leaveCb ? null : parentElm,
+                    nodeOps.nextSibling(oldElm)
+                )
+
+                if (isDef(vnode.parent)) {
+                    // component root element replaced.
+                    // update parent placeholder node element, recursively
+                    let ancestor = vnode.parent
+                    while (ancestor) {
+                        ancestor.elm = vnode.elm
+                        ancestor = ancestor.parent
+                    }
+                    if (isPatchable(vnode)) {
+                        for (let i = 0; i < cbs.create.length; ++i) {
+                            cbs.create[i](emptyNode, vnode.parent)
+                        }
+                    }
+                }
+
+                if (isDef(parentElm)) {
+                    removeVnodes(parentElm, [oldVnode], 0, 0)
+                } else if (isDef(oldVnode.tag)) {
+                    invokeDestroyHook(oldVnode)
+                }
             }
-          }
         }
 
         invokeInsertHook(vnode, insertedVnodeQueue, isInitialPatch)

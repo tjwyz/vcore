@@ -63,7 +63,9 @@ export function createComponentInstanceForVnode (vnode, parent, parentElm,refElm
 const componentVNodeHooks = {
     init (vnode, hydrating, parentElm, refElm) {
         if (!vnode.componentInstance || vnode.componentInstance._isDestroyed) {
-            //parent  activeInstance   当前活跃实例   父实例 
+            //组件vnode已经在了
+            //现在要对组件vnode里的构造函数实例化 new Vue()
+            //create Component Instance For Vnode
             const child = vnode.componentInstance = createComponentInstanceForVnode(
                 vnode,
                 activeInstance,
@@ -80,7 +82,7 @@ const componentVNodeHooks = {
         }
     },
 
-    prepatch (oldVnode: MountedComponentVNode, vnode: MountedComponentVNode) {
+    prepatch (oldVnode, vnode) {
         const options = vnode.componentOptions
         const child = vnode.componentInstance = oldVnode.componentInstance
         
@@ -241,7 +243,7 @@ export function createComponent (Ctor, data, context, children, tag) {
 
     // merge component management hooks onto the placeholder node
     // 装饰vnode.data
-    // vnode.data.hook.init 
+    // (vnode.data).hook.init 
     // vnode.data.hook.prepatch
     // vnode.data.hook.insert
     // vnode.data.hook.destroy
